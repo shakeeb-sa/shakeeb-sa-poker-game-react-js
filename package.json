@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://shakeeb-sa.github.io/poker-game",
+  "homepage": "https://shakeeb-sa.github.io/shakeeb-sa-poker-game-react-js",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

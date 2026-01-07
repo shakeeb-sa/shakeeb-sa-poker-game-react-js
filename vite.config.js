@@ -3,5 +3,5 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  base: '/poker-game/', // This must match your repo name
+  base: '/shakeeb-sa-poker-game-react-js/', // This MUST match your repo name
 })
