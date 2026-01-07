@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import Confetti from 'react-confetti'; // IMPORT CONFETTI
+import Confetti from 'react-confetti';
 import './App.css';
 import { createDeck, determineWinner, getHandStrength } from './utils/pokerLogic';
-import { playSound } from './utils/sound'; // IMPORT SOUND
+import { playSound } from './utils/sound';
 import Card from './components/Card';
 
 const BLIND = 10;
@@ -23,10 +23,9 @@ function App() {
   
   const [isPlayerTurn, setIsPlayerTurn] = useState(false);
   const [message, setMessage] = useState("Click 'Deal' to start");
-  const [winner, setWinner] = useState(null); // Track specific winner for effects
+  const [winner, setWinner] = useState(null); 
   const [windowSize, setWindowSize] = useState({ width: window.innerWidth, height: window.innerHeight });
 
-  // Update window size for confetti
   useEffect(() => {
     const handleResize = () => setWindowSize({ width: window.innerWidth, height: window.innerHeight });
     window.addEventListener('resize', handleResize);
@@ -98,20 +97,27 @@ function App() {
     setTimeout(botTurn, 1000);
   };
 
-  // --- UPGRADED AI ---
+  // --- REVISED BOT LOGIC ---
   const botTurn = () => {
-    const strength = getHandStrength(botHand, communityCards);
-    const rng = Math.random();
+    // 1. Get Score (0-100)
+    const strength = getHandStrength(botHand, communityCards, stage);
     
-    // Pot Odds Calculation: (Amount to Call) / (Total Pot + Amount to Call)
-    // Low pot odds means it's cheap to call.
+    // 2. Calculate Pot Odds
+    // Example: Pot $100, Bet $20. Total Pool $120. Call is $20. 
+    // Ratio = 20 / 120 = 0.16 (Very cheap to call)
     const callCost = currentBet;
-    const potOdds = callCost > 0 ? callCost / (pot + callCost) : 0;
+    const potSizeAfterCall = pot + callCost;
+    const potOdds = callCost > 0 ? callCost / potSizeAfterCall : 0;
+
+    // Random factor for bluffing
+    const rng = Math.random(); 
+
+    // DECISION TREE
     
-    // AI Decision Matrix
-    // 1. If checking (free): Bot almost always checks unless hand is great
+    // A. Player Checked (Free Move)
     if (currentBet === 0) {
-      if (strength > 60) { // Good hand
+      // Check unless hand is Good (50+) or Random Bluff (20%)
+      if (strength > 55 || rng < 0.2) {
         const betAmt = Math.min(botChips, 50);
         playSound('chip');
         setBotChips(prev => prev - betAmt);
@@ -124,12 +130,24 @@ function App() {
         setTimeout(proceedToNextStreet, 1000);
       }
     } 
-    // 2. If facing a bet: Use Pot Odds vs Hand Strength
+    
+    // B. Player Bet (Cost to play)
     else {
-      // Normalize strength to 0-1 (approx)
-      const winProb = strength / 100; 
+      // Determine "Willingness to Pay"
+      let willingness = 0;
+      
+      // If hand is garbage (<30), only call if very cheap
+      if (strength < 30) willingness = 0.1; 
+      // If hand is decent (30-50), call reasonable bets
+      else if (strength < 50) willingness = 0.35;
+      // If hand is strong (50+), call almost anything
+      else willingness = 0.9;
 
-      if (winProb > potOdds || rng < 0.2) { // Call if odds are good OR bluff(20%)
+      // Always call if the bet is tiny compared to pot (Pot Committed)
+      if (potOdds < 0.1) willingness += 0.5;
+
+      // EXECUTE
+      if (willingness > potOdds || rng < 0.15) { // 15% random 'hero call'
         playSound('chip');
         setBotChips(prev => prev - currentBet);
         setPot(prev => prev + currentBet);
@@ -138,11 +156,11 @@ function App() {
         setTimeout(proceedToNextStreet, 1000);
       } else {
         playSound('fold');
-        setMessage("Bot Folds! You Win.");
+        setMessage("Bot Folds. You Win.");
         setPlayerChips(prev => prev + pot);
         setPot(0);
         setStage('start');
-        setWinner('Player'); // Trigger confetti
+        setWinner('Player');
         playSound('win');
       }
     }
@@ -203,13 +221,11 @@ function App() {
     <div className="table">
       {winner === 'Player' && <Confetti width={windowSize.width} height={windowSize.height} recycle={false} />}
       
-      {/* HUD */}
       <div className="info-bar">
         <span>Pot: ${pot}</span>
         <span>{message}</span>
       </div>
 
-      {/* Bot */}
       <div className="player-area">
         <div className={`avatar bot-avatar ${isPlayerTurn ? '' : 'active-turn'}`}>
           Bot (${botChips})
@@ -221,7 +237,6 @@ function App() {
         </div>
       </div>
 
-      {/* Community */}
       <div className="community-area">
         <div className="cards-container">
           {communityCards.map((card, i) => (
@@ -230,7 +245,6 @@ function App() {
         </div>
       </div>
 
-      {/* Player */}
       <div className="player-area">
         <div className="cards-container">
           {playerHand.map((card, i) => (
@@ -242,7 +256,6 @@ function App() {
         </div>
       </div>
 
-      {/* Controls */}
       <div className="controls">
         {stage === 'start' || stage === 'showdown' ? (
           <button className="btn-primary" onClick={dealGame}>

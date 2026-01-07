@@ -1,113 +1,122 @@
-body { margin: 0; background: #222; }
+:root {
+  --table-color: #35654d;
+  --table-dark: #1e3c2e;
+}
+
+body, html {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden; /* Prevent scrolling */
+  background: #222;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+}
 
 .table {
-  background: radial-gradient(#35654d, #1e3c2e);
-  min-height: 100vh;
-  color: white;
+  /* CRITICAL FIX: Force full width and height */
+  width: 100vw; 
+  height: 100vh;
+  
+  background: radial-gradient(circle at center, var(--table-color), var(--table-dark));
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  padding: 10px;
+  justify-content: space-between; /* Spreads UI top to bottom */
+  padding: 20px 0;
+  box-sizing: border-box;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: white;
   user-select: none;
 }
 
+/* --- HUD & Info --- */
 .info-bar {
-  background: rgba(0,0,0,0.5);
-  padding: 15px 30px;
+  background: rgba(0,0,0,0.6);
+  padding: 10px 30px;
   border-radius: 30px;
   display: flex;
-  gap: 30px;
+  gap: 20px;
   font-size: 1.2rem;
   font-weight: bold;
-  border: 1px solid #ffffff33;
-  margin-top: 10px;
+  border: 1px solid rgba(255,255,255,0.2);
+  backdrop-filter: blur(5px);
+  z-index: 10;
 }
 
+/* --- Player/Bot Areas --- */
 .player-area {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 10px;
+  width: 100%;
+  justify-content: center;
 }
 
 .avatar {
   background: #333;
-  padding: 5px 15px;
-  border-radius: 15px;
-  border: 2px solid gold;
+  padding: 8px 20px;
+  border-radius: 20px;
+  border: 3px solid #555;
   font-weight: bold;
   box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  transition: all 0.3s ease;
+  z-index: 5;
 }
 
-.bot-avatar { border-color: #ff4757; }
-.player-avatar { border-color: #2ed573; font-size: 1.2rem;}
+.bot-avatar.active-turn { border-color: #ff4757; box-shadow: 0 0 15px #ff4757; transform: scale(1.1); }
+.player-avatar.active-turn { border-color: #2ed573; box-shadow: 0 0 15px #2ed573; transform: scale(1.1); }
 
+/* --- Cards --- */
 .cards-container {
   display: flex;
-  gap: 8px;
-  height: 100px;
-}
-
-.community-area {
-  background: rgba(255, 255, 255, 0.1);
-  padding: 15px;
-  border-radius: 50px;
-  min-width: 320px;
-  min-height: 100px;
-  display: flex;
   justify-content: center;
-  align-items: center;
-  border: 2px solid rgba(255,255,255,0.2);
+  gap: 10px;
+  height: 110px; /* Fixed height to prevent jumping */
 }
-
-/* Remove old .card styles that involved borders/text */
 
 .card-image-container {
-  width: 70px;
-  height: 100px;
-  transition: transform 0.3s ease;
+  width: 75px; 
+  height: 109px;
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .card-image {
   width: 100%;
   height: 100%;
-  border-radius: 5px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+  border-radius: 6px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.5);
 }
 
 .card-image-container:hover {
-  transform: translateY(-10px);
+  transform: translateY(-15px) scale(1.05);
+  z-index: 10;
 }
 
-/* Adjust container sizes for images */
-.cards-container {
+/* --- Community Area --- */
+.community-area {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 15px 40px;
+  border-radius: 100px;
   display: flex;
-  gap: 8px;
-  height: 110px; /* Increased height for images */
+  justify-content: center;
+  align-items: center;
+  border: 2px solid rgba(255,255,255,0.1);
+  margin: 10px 0;
 }
 
-/* Mobile Responsiveness */
-@media (max-width: 600px) {
-  .card-image-container { width: 50px; height: 72px; }
-  .cards-container { height: 80px; }
-  .community-area { min-width: 250px; }
-}
-
-.card:hover { transform: translateY(-5px); }
-.card.red { color: #d63031; }
-.card.black { color: #2d3436; }
-.card.back { 
-  background: repeating-linear-gradient(45deg, #2d3436, #2d3436 10px, #636e72 10px, #636e72 20px);
-  border: 2px solid white; 
-}
-
+/* --- Controls --- */
 .controls {
   display: flex;
   gap: 15px;
   margin-bottom: 20px;
-  height: 60px;
+  height: 50px;
+  z-index: 10;
 }
 
 button {
@@ -116,9 +125,11 @@ button {
   font-weight: bold;
   font-size: 1rem;
   cursor: pointer;
-  padding: 0 20px;
-  transition: all 0.2s;
-  box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+  padding: 0 25px;
+  transition: all 0.1s;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.3);
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 button:active {
@@ -126,12 +137,15 @@ button:active {
   box-shadow: none;
 }
 
-.btn-primary { background: #f1c40f; color: #333; }
-.btn-action { background: #3498db; color: white; }
-.btn-fold { background: #e74c3c; color: white; }
+.btn-primary { background: #f1c40f; color: #2c3e50; } /* Deal */
+.btn-action { background: #3498db; color: white; }   /* Check/Call/Bet */
+.btn-fold { background: #e74c3c; color: white; }     /* Fold */
 
-.active-turn {
-  box-shadow: 0 0 15px 5px rgba(255, 255, 255, 0.6);
-  transform: scale(1.05);
-  transition: all 0.3s ease;
+/* Mobile Adjustments */
+@media (max-width: 600px) {
+  .card-image-container { width: 50px; height: 72px; }
+  .cards-container { height: 80px; }
+  .community-area { padding: 10px 20px; width: 90%; box-sizing: border-box;}
+  .controls { flex-wrap: wrap; justify-content: center; height: auto; }
+  button { padding: 10px 15px; font-size: 0.9rem; }
 }
