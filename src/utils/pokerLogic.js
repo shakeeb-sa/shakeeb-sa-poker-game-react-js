@@ -38,3 +38,18 @@ export const determineWinner = (playerHand, botHand, communityCards) => {
     description: winner[0].descr // e.g., "Two Pair", "Full House"
   };
 };
+
+// ... existing imports and functions ...
+
+// Simple heuristic for Bot AI (0 = garbage, 100 = royal flush)
+export const getHandStrength = (hand, communityCards) => {
+  const formatCard = (c) => `${c.rank}${c.suit}`;
+  const allCards = [...hand, ...communityCards].map(formatCard);
+  const solved = Hand.solve(allCards);
+  
+  // Rank: 0 (High Card) to 9 (Royal Flush)
+  const rank = solved.rank; 
+  
+  // Normalize to 0-100 roughly
+  return (rank * 10) + (solved.cardPool[0].value / 14); 
+};
