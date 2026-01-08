@@ -1,3 +1,344 @@
+This file is a merged representation of a subset of the codebase, containing specifically included files, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of a subset of the repository's contents that is considered the most important context.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Only files matching these patterns are included: package-lock.json, package.json, src/App.css, src/App.jsx, src/components/Card.jsx
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+package.json
+src/App.css
+src/App.jsx
+src/components/Card.jsx
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="src/components/Card.jsx">
+import React from 'react';
+import { motion } from 'framer-motion';
+
+const Card = ({ card, hidden, index }) => {
+  // Animation variants
+  const variants = {
+    hidden: { 
+      opacity: 0, 
+      y: -100, 
+      scale: 0.5,
+      rotate: Math.random() * 20 - 10 
+    },
+    visible: { 
+      opacity: 1, 
+      y: 0, 
+      scale: 1, 
+      rotate: 0,
+      transition: { 
+        delay: index * 0.1, // Stagger effect (deal cards one by one)
+        type: "spring",
+        stiffness: 200,
+        damping: 15
+      }
+    }
+  };
+
+  // Card Logic
+  let r = card.rank;
+  if (r === 'T') r = '0'; // API fix
+  const s = card.suit ? card.suit.toUpperCase() : '';
+  
+  const imageUrl = hidden 
+    ? "https://deckofcardsapi.com/static/img/back.png"
+    : `https://deckofcardsapi.com/static/img/${r}${s}.png`;
+
+  return (
+    <motion.div 
+      className="card-image-container"
+      variants={variants}
+      initial="hidden"
+      animate="visible"
+      whileHover={{ scale: 1.1, y: -10, zIndex: 100 }}
+    >
+      <img src={imageUrl} alt="card" className="card-image" />
+    </motion.div>
+  );
+};
+
+export default Card;
+</file>
+
+<file path="package.json">
+{
+  "name": "poker-game",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "homepage": "https://shakeeb-sa.github.io/shakeeb-sa-poker-game-react-js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
+  },
+  "dependencies": {
+    "classnames": "^2.5.1",
+    "framer-motion": "^12.24.11",
+    "gh-pages": "^6.3.0",
+    "pokersolver": "^2.1.4",
+    "react": "^19.2.0",
+    "react-confetti": "^6.4.0",
+    "react-dom": "^19.2.0",
+    "react-toastify": "^11.0.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/react": "^19.2.5",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.1",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "globals": "^16.5.0",
+    "vite": "^7.2.4"
+  }
+}
+</file>
+
+<file path="src/App.css">
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
+
+:root {
+  --felt-color: #35654d;
+  --felt-dark: #1e3c2e;
+  --gold: #f1c40f;
+  --rail: #3e2723;
+}
+
+body, html {
+  margin: 0; padding: 0; width: 100%; height: 100%;
+  overflow: hidden; background: #111;
+  font-family: 'Montserrat', sans-serif;
+}
+
+#root { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
+
+/* THE TABLE (Visuals) */
+.poker-table-wrapper {
+  width: 95vw;
+  height: 90vh;
+  background: #222;
+  border-radius: 100px;
+  padding: 15px;
+  box-shadow: 0 0 50px rgba(0,0,0,0.8);
+  border: 15px solid var(--rail); /* The Wood Rail */
+  position: relative;
+}
+
+.table {
+  width: 100%;
+  height: 100%;
+  border-radius: 85px;
+  background: radial-gradient(circle at center, var(--felt-color), var(--felt-dark));
+  box-shadow: inset 0 0 100px rgba(0,0,0,0.6);
+  border: 2px solid rgba(255,255,255,0.1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 0;
+  box-sizing: border-box;
+  color: white;
+}
+
+/* UI ELEMENTS */
+.pot-container {
+  background: rgba(0,0,0,0.4);
+  padding: 10px 40px;
+  border-radius: 50px;
+  border: 2px solid var(--gold);
+  color: var(--gold);
+  font-weight: bold;
+  font-size: 1.5rem;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.player-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  width: 100%;
+  position: relative;
+}
+
+.avatar-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.avatar {
+  width: 80px; height: 80px;
+  background: #222;
+  border-radius: 50%;
+  border: 4px solid #555;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  font-size: 0.9rem;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+  z-index: 5;
+  color: #aaa;
+  text-transform: uppercase;
+}
+
+.chip-count {
+  background: #111;
+  color: var(--gold);
+  padding: 4px 12px;
+  border-radius: 10px;
+  margin-top: -15px;
+  z-index: 6;
+  font-size: 0.9rem;
+  border: 1px solid #333;
+}
+
+/* ACTIVE TURN GLOW */
+.active-turn .avatar {
+  border-color: #eee;
+  box-shadow: 0 0 20px rgba(255,255,255,0.4);
+  color: white;
+}
+
+.bot-avatar.active-turn .avatar { border-color: #ff4757; box-shadow: 0 0 25px #ff4757; }
+.player-avatar.active-turn .avatar { border-color: #2ed573; box-shadow: 0 0 25px #2ed573; }
+
+/* CARDS & COMMUNITY */
+.cards-container {
+  display: flex;
+  gap: 10px;
+  height: 120px;
+  perspective: 1000px;
+}
+
+.card-image-container {
+  width: 80px; height: 116px;
+  cursor: pointer;
+}
+
+.card-image {
+  width: 100%; height: 100%;
+  border-radius: 6px;
+  box-shadow: 0 5px 10px rgba(0,0,0,0.5);
+}
+
+.community-area {
+  background: rgba(0,0,0,0.15);
+  padding: 20px 60px;
+  border-radius: 100px;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+/* CONTROLS */
+.controls-bar {
+  background: rgba(0,0,0,0.8);
+  padding: 15px;
+  border-radius: 20px;
+  display: flex;
+  gap: 15px;
+  backdrop-filter: blur(10px);
+  border-top: 1px solid #333;
+  margin-bottom: 20px;
+}
+
+button {
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+  font-family: 'Montserrat', sans-serif;
+  letter-spacing: 1px;
+  transition: transform 0.1s, filter 0.2s;
+}
+
+button:hover { filter: brightness(1.2); }
+button:active { transform: scale(0.95); }
+
+.btn-main { background: linear-gradient(to bottom, #f1c40f, #f39c12); color: #222; box-shadow: 0 4px 0 #d35400; }
+.btn-check { background: linear-gradient(to bottom, #3498db, #2980b9); color: white; box-shadow: 0 4px 0 #1c5980; }
+.btn-bet { background: linear-gradient(to bottom, #9b59b6, #8e44ad); color: white; box-shadow: 0 4px 0 #6c3483; }
+.btn-fold { background: linear-gradient(to bottom, #e74c3c, #c0392b); color: white; box-shadow: 0 4px 0 #922b21; }
+
+/* HAND STRENGTH METER */
+.strength-meter {
+  width: 200px;
+  height: 8px;
+  background: #333;
+  border-radius: 4px;
+  margin-top: 10px;
+  overflow: hidden;
+  border: 1px solid #555;
+}
+.strength-fill {
+  height: 100%;
+  transition: width 0.5s ease, background-color 0.5s ease;
+}
+
+/* MOBILE RESPONSIVE */
+@media (max-width: 600px) {
+  .poker-table-wrapper { width: 100vw; height: 100vh; border: none; border-radius: 0; padding: 0; }
+  .table { border-radius: 0; }
+  .card-image-container { width: 60px; height: 87px; }
+  .cards-container { height: 90px; }
+  .community-area { padding: 10px 20px; width: 95%; }
+  .controls-bar { width: 100%; border-radius: 0; margin-bottom: 0; padding: 10px; justify-content: center;}
+  button { padding: 10px 15px; font-size: 0.8rem; }
+}
+</file>
+
+<file path="src/App.jsx">
 import React, { useState, useEffect } from 'react';
 import Confetti from 'react-confetti';
 import { ToastContainer, toast } from 'react-toastify'; // NOTIFICATIONS
@@ -303,3 +644,6 @@ function App() {
 }
 
 export default App;
+</file>
+
+</files>
