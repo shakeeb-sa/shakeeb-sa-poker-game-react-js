@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Confetti from 'react-confetti';
-import { ToastContainer, toast } from 'react-toastify'; // NOTIFICATIONS
-import 'react-toastify/dist/ReactToastify.css'; // NOTIFICATION CSS
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { Hand } from 'pokersolver'; // Import Hand for text description
 import './App.css';
 import { createDeck, determineWinner, getHandStrength } from './utils/pokerLogic';
 import { playSound } from './utils/sound';
@@ -11,24 +12,43 @@ const BLIND = 10;
 const INITIAL_CHIPS = 1000;
 
 function App() {
+  // --- STATE ---
   const [deck, setDeck] = useState([]);
   const [stage, setStage] = useState('start'); 
-  
   const [playerHand, setPlayerHand] = useState([]);
   const [botHand, setBotHand] = useState([]);
   const [communityCards, setCommunityCards] = useState([]);
   
-  const [playerChips, setPlayerChips] = useState(INITIAL_CHIPS);
+  // Chips (Load from localStorage if available)
+  const [playerChips, setPlayerChips] = useState(() => {
+    const saved = localStorage.getItem('poker_player_chips');
+    return saved ? parseInt(saved) : INITIAL_CHIPS;
+  });
   const [botChips, setBotChips] = useState(INITIAL_CHIPS);
+  
+  // Game Stats
   const [pot, setPot] = useState(0);
   const [currentBet, setCurrentBet] = useState(0); 
-  
+  const [winStreak, setWinStreak] = useState(0);
+  const [handDesc, setHandDesc] = useState(""); // e.g. "Two Pair"
+
   const [isPlayerTurn, setIsPlayerTurn] = useState(false);
   const [winner, setWinner] = useState(null); 
   const [windowSize, setWindowSize] = useState({ width: window.innerWidth, height: window.innerHeight });
 
-  // Player Hand Strength (Visual Meter)
-  const [playerStrength, setPlayerStrength] = useState(0);
+  // Refs for Bot Logic
+  const deckRef = useRef(deck);
+  const stageRef = useRef(stage);
+  const communityRef = useRef(communityCards);
+
+  // Sync Refs & LocalStorage
+  useEffect(() => { deckRef.current = deck; }, [deck]);
+  useEffect(() => { stageRef.current = stage; }, [stage]);
+  useEffect(() => { communityRef.current = communityCards; }, [communityCards]);
+  
+  useEffect(() => {
+    localStorage.setItem('poker_player_chips', playerChips);
+  }, [playerChips]);
 
   useEffect(() => {
     const handleResize = () => setWindowSize({ width: window.innerWidth, height: window.innerHeight });
@@ -36,23 +56,36 @@ function App() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Update strength meter whenever cards change
+  // Update Hand Description Live
   useEffect(() => {
     if (playerHand.length > 0) {
-      const s = getHandStrength(playerHand, communityCards, stage);
-      setPlayerStrength(s);
+      const format = (c) => `${c.rank}${c.suit}`;
+      const cards = [...playerHand, ...communityCards].map(format);
+      try {
+        const solved = Hand.solve(cards);
+        setHandDesc(solved.descr);
+      } catch (e) { setHandDesc(""); }
     } else {
-      setPlayerStrength(0);
+      setHandDesc("");
     }
-  }, [playerHand, communityCards, stage]);
+  }, [playerHand, communityCards]);
 
   const notify = (msg) => toast.dark(msg, { position: "top-center", autoClose: 2000, hideProgressBar: true });
+
+  // --- ACTIONS ---
 
   const dealGame = () => {
     setWinner(null);
     playSound('deal');
     if (playerChips < BLIND || botChips < BLIND) {
-      notify("Game Over! Please refresh.");
+      if (playerChips < BLIND) {
+        notify("Bankrupt! Resetting chips...");
+        setPlayerChips(INITIAL_CHIPS);
+        setWinStreak(0);
+      } else {
+        notify("Bot Bankrupt! Bot rebuying...");
+        setBotChips(INITIAL_CHIPS);
+      }
       return;
     }
 
@@ -69,7 +102,6 @@ function App() {
     
     setStage('preflop');
     setCurrentBet(0);
-    notify("New Hand Dealt");
     setIsPlayerTurn(true);
   };
 
@@ -79,6 +111,7 @@ function App() {
     setBotChips(prev => prev + pot);
     setPot(0);
     setStage('start');
+    setWinStreak(0); // Reset streak
   };
 
   const handleCheck = () => {
@@ -113,16 +146,16 @@ function App() {
     setTimeout(botTurn, 1000);
   };
 
-  // --- BOT LOGIC (Reused from previous step, assumed working) ---
+  // --- BOT LOGIC ---
   const botTurn = () => {
-    const strength = getHandStrength(botHand, communityCards, stage);
-    const callCost = currentBet;
-    const potSizeAfterCall = pot + callCost;
-    const potOdds = callCost > 0 ? callCost / potSizeAfterCall : 0;
+    const strength = getHandStrength(botHand, communityRef.current, stageRef.current);
     const rng = Math.random(); 
+    const callCost = currentBet;
 
+    // Bot Decision
     if (currentBet === 0) {
-      if (strength > 55 || rng < 0.2) {
+      // Bet if hand > 50 or Bluff 20%
+      if (strength > 50 || rng < 0.2) {
         const betAmt = Math.min(botChips, 50);
         playSound('chip');
         setBotChips(prev => prev - betAmt);
@@ -135,13 +168,8 @@ function App() {
         setTimeout(proceedToNextStreet, 1000);
       }
     } else {
-      let willingness = 0;
-      if (strength < 30) willingness = 0.1; 
-      else if (strength < 50) willingness = 0.35;
-      else willingness = 0.9;
-      if (potOdds < 0.1) willingness += 0.5;
-
-      if (willingness > potOdds || rng < 0.15) { 
+      // Call if hand > 30 or Bluff 15%
+      if (strength > 30 || rng < 0.15) { 
         playSound('chip');
         setBotChips(prev => prev - currentBet);
         setPot(prev => prev + currentBet);
@@ -155,6 +183,7 @@ function App() {
         setPot(0);
         setStage('start');
         setWinner('Player');
+        setWinStreak(prev => prev + 1);
         playSound('win');
       }
     }
@@ -162,25 +191,26 @@ function App() {
 
   const proceedToNextStreet = () => {
     playSound('deal');
-    const newDeck = [...deck];
-    const currentComm = [...communityCards];
+    const newDeck = [...deckRef.current];
+    const currentComm = [...communityRef.current];
+    const currentStage = stageRef.current;
 
-    if (stage === 'preflop') {
+    if (currentStage === 'preflop') {
       newDeck.pop(); 
       currentComm.push(newDeck.pop(), newDeck.pop(), newDeck.pop());
       setStage('flop');
       setIsPlayerTurn(true);
-    } else if (stage === 'flop') {
+    } else if (currentStage === 'flop') {
       newDeck.pop();
       currentComm.push(newDeck.pop());
       setStage('turn');
       setIsPlayerTurn(true);
-    } else if (stage === 'turn') {
+    } else if (currentStage === 'turn') {
       newDeck.pop();
       currentComm.push(newDeck.pop());
       setStage('river');
       setIsPlayerTurn(true);
-    } else if (stage === 'river') {
+    } else if (currentStage === 'river') {
       handleShowdown(currentComm);
       return;
     }
@@ -197,11 +227,13 @@ function App() {
       notify(`You Win! ${result.description}`);
       setPlayerChips(prev => prev + pot);
       setWinner('Player');
+      setWinStreak(prev => prev + 1);
       playSound('win');
     } else if (result.winner === 'Bot') {
       notify(`Bot Wins! ${result.description}`);
       setBotChips(prev => prev + pot);
       setWinner('Bot');
+      setWinStreak(0);
     } else {
       notify("It's a Tie! Pot Split.");
       setPlayerChips(prev => prev + (pot / 2));
@@ -210,22 +242,20 @@ function App() {
     setPot(0);
   };
 
-  // Helper for meter color
-  const getMeterColor = (s) => {
-    if (s < 30) return '#e74c3c'; // Red
-    if (s < 60) return '#f1c40f'; // Yellow
-    return '#2ed573'; // Green
-  };
-
   return (
     <div className="poker-table-wrapper">
       <div className="table">
         <ToastContainer />
         {winner === 'Player' && <Confetti width={windowSize.width} height={windowSize.height} recycle={false} />}
         
+        {/* STATS BAR */}
+        <div className="game-stats">
+          <div className="stat-badge">Streak: {winStreak} 🔥</div>
+        </div>
+
         {/* TOP: BOT AREA */}
         <div className="player-area">
-          <div className={`avatar-wrapper bot-avatar ${isPlayerTurn ? '' : 'active-turn'}`}>
+          <div className={`avatar-wrapper bot-avatar ${!isPlayerTurn ? 'active-turn' : ''}`}>
             <div className="avatar">BOT</div>
             <div className="chip-count">${botChips}</div>
           </div>
@@ -237,15 +267,14 @@ function App() {
         </div>
 
         {/* MIDDLE: POT & COMMUNITY */}
-        <div style={{display:'flex', flexDirection:'column', alignItems:'center', gap: '10px'}}>
-           <div className="pot-container">POT: ${pot}</div>
-           <div className="community-area">
-              <div className="cards-container">
-                {communityCards.map((card, i) => (
-                   <Card key={i} index={i} card={card} />
-                ))}
-                {communityCards.length === 0 && <div style={{width: 50, height: 110}}></div>}
-              </div>
+        <div className="community-area">
+           <div className="pot-display">POT: ${pot}</div>
+           <div className="cards-container">
+              {communityCards.map((card, i) => (
+                 <Card key={i} index={i} card={card} />
+              ))}
+              {/* Ghost slots for layout stability */}
+              {communityCards.length === 0 && <div style={{width: 50, height: 100}} />}
            </div>
         </div>
 
@@ -257,18 +286,10 @@ function App() {
             ))}
           </div>
           
-          {/* Hand Strength Meter */}
-          {playerHand.length > 0 && stage !== 'start' && (
-            <div className="strength-meter">
-               <div 
-                 className="strength-fill" 
-                 style={{
-                   width: `${Math.min(playerStrength, 100)}%`, 
-                   backgroundColor: getMeterColor(playerStrength)
-                 }}
-               ></div>
-            </div>
-          )}
+          {/* HAND READER */}
+          <div className="hand-reader">
+            {stage !== 'start' && handDesc}
+          </div>
 
           <div className={`avatar-wrapper player-avatar ${isPlayerTurn ? 'active-turn' : ''}`}>
             <div className="avatar">YOU</div>
@@ -280,7 +301,7 @@ function App() {
         <div className="controls-bar">
           {stage === 'start' || stage === 'showdown' ? (
             <button className="btn-main" onClick={dealGame}>
-              {playerChips < BLIND ? "Bankrupt" : "Deal Hand ($10)"}
+              {playerChips < BLIND ? "Rebuy ($1000)" : "Deal Hand"}
             </button>
           ) : (
             isPlayerTurn && (
