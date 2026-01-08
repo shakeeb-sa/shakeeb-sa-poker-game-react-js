@@ -7,6 +7,7 @@ import './App.css';
 import { createDeck, determineWinner, getHandStrength } from './utils/pokerLogic';
 import { playSound } from './utils/sound';
 import Card from './components/Card';
+import Chip from './components/Chip';
 
 const INITIAL_CHIPS = 2000;
 
@@ -361,30 +362,47 @@ function App() {
           <div className={`avatar-wrapper bot-avatar ${!isPlayerTurn ? 'active-turn' : ''}`}>
             <div className="avatar">BOT</div>
             <div className="chip-count">${botChips}</div>
+            
+            {/* Show Chip Stack if Bot has bet */}
+            {currentBet > 0 && !isPlayerTurn && (
+               <div className="bet-stack"><Chip amount={currentBet} /></div>
+            )}
           </div>
-          <div className="cards-container">
+          
+          {/* FANNED CARDS - WRAPPED CORRECTLY */}
+          <div className="player-hand-fan" style={{transform: 'scale(0.85)'}}>
             {botHand.map((card, i) => (
-              <Card key={i} index={i} card={card} hidden={stage !== 'showdown'} />
+              <div key={i} className="card-image-container">
+                <Card index={i} card={card} hidden={stage !== 'showdown'} />
+              </div>
             ))}
           </div>
         </div>
 
-        {/* COMMUNITY */}
+        {/* COMMUNITY AREA */}
         <div className="community-area">
-           <div className="pot-display">POT: ${pot}</div>
+           <div className="pot-wrapper">
+              <Chip amount={pot} />
+              <div className="pot-label">POT: ${pot}</div>
+           </div>
            <div className="cards-container">
               {communityCards.map((card, i) => (
-                 <Card key={i} index={i} card={card} />
+                 <div key={i} className="card-image-container">
+                    <Card card={card} hidden={false} />
+                 </div>
               ))}
               {communityCards.length === 0 && <div style={{width: 50, height: 100}} />}
            </div>
         </div>
 
-        {/* PLAYER */}
+        {/* PLAYER AREA */}
         <div className="player-area">
-          <div className="cards-container">
+          {/* Fanned Cards */}
+          <div className="player-hand-fan">
             {playerHand.map((card, i) => (
-               <Card key={i} index={i} card={card} />
+               <div key={i} className="card-image-container">
+                 <Card card={card} hidden={false} />
+               </div>
             ))}
           </div>
           
@@ -395,6 +413,10 @@ function App() {
           <div className={`avatar-wrapper player-avatar ${isPlayerTurn ? 'active-turn' : ''}`}>
             <div className="avatar">YOU</div>
             <div className="chip-count">${playerChips}</div>
+             {/* Show Chip Stack if Player has bet */}
+             {currentBet > 0 && isPlayerTurn && (
+               <div className="bet-stack"><Chip amount={currentBet} /></div>
+             )}
           </div>
         </div>
 

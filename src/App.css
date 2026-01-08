@@ -352,3 +352,53 @@ button:active { transform: translateY(1px); }
   .controls-bar { width: 100%; border-radius: 0; gap: 10px; padding: 10px; bottom: 0; }
   button { padding: 10px 5px; min-width: auto; flex: 1; font-size: 0.8rem; }
 }
+
+
+/* --- PASTE THIS AT THE BOTTOM OF App.css --- */
+
+/* 3D Chips */
+.poker-chip-3d {
+  width: 45px; height: 45px;
+  background: var(--chip-color);
+  border: 4px dashed white;
+  border-radius: 50%;
+  box-shadow: 0 4px 0 var(--chip-border), 0 5px 10px rgba(0,0,0,0.4);
+  display: flex; justify-content: center; align-items: center;
+  position: relative; z-index: 60;
+}
+.chip-inner {
+  width: 32px; height: 32px;
+  border-radius: 50%; border: 2px solid white;
+  display: flex; justify-content: center; align-items: center;
+  font-size: 0.7rem; font-weight: bold; color: #333;
+  background: rgba(255,255,255,0.8);
+}
+.bet-stack {
+  position: absolute; top: 40%; right: -50px;
+  display: flex; flex-direction: column-reverse;
+  z-index: 60; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+
+/* Realistic Hand Fanning */
+.player-hand-fan {
+  position: relative;
+  width: 200px; height: 160px;
+  display: flex; justify-content: center; align-items: flex-end;
+  animation: breathe 4s infinite ease-in-out;
+  margin-top: 10px;
+}
+@keyframes breathe { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+
+/* Cards inside fan are absolute to overlap */
+.player-hand-fan .card-image-container { position: absolute !important; transform-origin: bottom center; }
+.player-hand-fan .card-image-container:nth-child(1) { transform: rotate(-10deg) translateX(-20px); z-index: 1; }
+.player-hand-fan .card-image-container:nth-child(2) { transform: rotate(10deg) translateX(20px); z-index: 2; }
+
+/* Hover Effect */
+.player-hand-fan:hover .card-image-container:nth-child(1) { transform: rotate(-15deg) translateX(-60px) translateY(-15px); }
+.player-hand-fan:hover .card-image-container:nth-child(2) { transform: rotate(15deg) translateX(60px) translateY(-15px); }
+
+/* Pot Wrapper */
+.pot-wrapper { display: flex; align-items: center; gap: 15px; background: rgba(0,0,0,0.6); padding: 5px 25px; border-radius: 40px; border: 2px solid var(--gold); }
+.pot-label { color: var(--gold); font-weight: 900; font-size: 1.5rem; }
