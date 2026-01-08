@@ -2,17 +2,25 @@ import React, { useState, useEffect, useRef } from 'react';
 import Confetti from 'react-confetti';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { Hand } from 'pokersolver'; // Import Hand for text description
+import { Hand } from 'pokersolver'; 
 import './App.css';
 import { createDeck, determineWinner, getHandStrength } from './utils/pokerLogic';
 import { playSound } from './utils/sound';
 import Card from './components/Card';
 
-const BLIND = 10;
-const INITIAL_CHIPS = 1000;
+const INITIAL_CHIPS = 2000;
+
+// DIFFICULTY CONFIGURATION
+const DIFFICULTY_SETTINGS = {
+  EASY: { blind: 10, name: "Rookie", color: "#2ecc71" },
+  NORMAL: { blind: 50, name: "Pro", color: "#3498db" },
+  HARD: { blind: 200, name: "Shark", color: "#e74c3c" }
+};
 
 function App() {
   // --- STATE ---
+  const [difficulty, setDifficulty] = useState(null); // 'EASY', 'NORMAL', 'HARD' or null (Menu)
+  
   const [deck, setDeck] = useState([]);
   const [stage, setStage] = useState('start'); 
   const [playerHand, setPlayerHand] = useState([]);
@@ -26,25 +34,26 @@ function App() {
   });
   const [botChips, setBotChips] = useState(INITIAL_CHIPS);
   
-  // Game Stats
   const [pot, setPot] = useState(0);
   const [currentBet, setCurrentBet] = useState(0); 
   const [winStreak, setWinStreak] = useState(0);
-  const [handDesc, setHandDesc] = useState(""); // e.g. "Two Pair"
+  const [handDesc, setHandDesc] = useState(""); 
 
   const [isPlayerTurn, setIsPlayerTurn] = useState(false);
   const [winner, setWinner] = useState(null); 
   const [windowSize, setWindowSize] = useState({ width: window.innerWidth, height: window.innerHeight });
 
-  // Refs for Bot Logic
+  // Refs
   const deckRef = useRef(deck);
   const stageRef = useRef(stage);
   const communityRef = useRef(communityCards);
+  const diffRef = useRef(difficulty); // Ref for difficulty access in logic
 
-  // Sync Refs & LocalStorage
+  // Sync Refs
   useEffect(() => { deckRef.current = deck; }, [deck]);
   useEffect(() => { stageRef.current = stage; }, [stage]);
   useEffect(() => { communityRef.current = communityCards; }, [communityCards]);
+  useEffect(() => { diffRef.current = difficulty; }, [difficulty]);
   
   useEffect(() => {
     localStorage.setItem('poker_player_chips', playerChips);
@@ -56,7 +65,7 @@ function App() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Update Hand Description Live
+  // Hand Reader
   useEffect(() => {
     if (playerHand.length > 0) {
       const format = (c) => `${c.rank}${c.suit}`;
@@ -74,16 +83,27 @@ function App() {
 
   // --- ACTIONS ---
 
+  const selectDifficulty = (mode) => {
+    playSound('chip');
+    setDifficulty(mode);
+    setPlayerChips(INITIAL_CHIPS); // Reset chips for fair start
+    setBotChips(INITIAL_CHIPS);
+    setWinStreak(0);
+    setStage('start');
+  };
+
   const dealGame = () => {
     setWinner(null);
     playSound('deal');
+    
+    const BLIND = DIFFICULTY_SETTINGS[difficulty].blind;
+
     if (playerChips < BLIND || botChips < BLIND) {
       if (playerChips < BLIND) {
-        notify("Bankrupt! Resetting chips...");
-        setPlayerChips(INITIAL_CHIPS);
-        setWinStreak(0);
+        notify("Bankrupt! Returning to Menu...");
+        setTimeout(() => setDifficulty(null), 2000);
       } else {
-        notify("Bot Bankrupt! Bot rebuying...");
+        notify("Bot Bankrupt! Rebuying...");
         setBotChips(INITIAL_CHIPS);
       }
       return;
@@ -111,7 +131,7 @@ function App() {
     setBotChips(prev => prev + pot);
     setPot(0);
     setStage('start');
-    setWinStreak(0); // Reset streak
+    setWinStreak(0); 
   };
 
   const handleCheck = () => {
@@ -146,30 +166,58 @@ function App() {
     setTimeout(botTurn, 1000);
   };
 
-  // --- BOT LOGIC ---
+  const exitToMenu = () => {
+    setDifficulty(null);
+  };
+
+  // --- BOT LOGIC (DYNAMIC DIFFICULTY) ---
   const botTurn = () => {
     const strength = getHandStrength(botHand, communityRef.current, stageRef.current);
     const rng = Math.random(); 
-    const callCost = currentBet;
+    
+    // AI SETTINGS BASED ON DIFFICULTY
+    let betThreshold, callThreshold, bluffChance;
+    
+    switch(diffRef.current) {
+      case 'EASY':
+        betThreshold = 65; // Only bets with great hands
+        callThreshold = 20; // Loose calling (easy to trap)
+        bluffChance = 0.05; // Rarely bluffs
+        break;
+      case 'HARD':
+        betThreshold = 40; // Aggressive betting
+        callThreshold = 30; // Smarter calling
+        bluffChance = 0.40; // Bluffs a lot
+        break;
+      case 'NORMAL':
+      default:
+        betThreshold = 50;
+        callThreshold = 25;
+        bluffChance = 0.15;
+        break;
+    }
 
-    // Bot Decision
     if (currentBet === 0) {
-      // Bet if hand > 50 or Bluff 20%
-      if (strength > 50 || rng < 0.2) {
-        const betAmt = Math.min(botChips, 50);
+      // DECISION: CHECK or BET
+      if (strength > betThreshold || rng < bluffChance) {
+        // Bet amount logic (Harder bots bet more logic)
+        const betAmt = diffRef.current === 'HARD' ? 100 : 50; 
+        const safeBet = Math.min(botChips, betAmt);
+        
         playSound('chip');
-        setBotChips(prev => prev - betAmt);
-        setPot(prev => prev + betAmt);
-        setCurrentBet(betAmt);
-        notify(`Bot Bets $${betAmt}`);
+        setBotChips(prev => prev - safeBet);
+        setPot(prev => prev + safeBet);
+        setCurrentBet(safeBet);
+        notify(`Bot Bets $${safeBet}`);
         setIsPlayerTurn(true);
       } else {
         notify("Bot Checks");
         setTimeout(proceedToNextStreet, 1000);
       }
     } else {
-      // Call if hand > 30 or Bluff 15%
-      if (strength > 30 || rng < 0.15) { 
+      // DECISION: CALL or FOLD
+      // Easy bots call way too much. Hard bots fold if odds are bad (simplified here)
+      if (strength > callThreshold || rng < (bluffChance / 2)) { 
         playSound('chip');
         setBotChips(prev => prev - currentBet);
         setPot(prev => prev + currentBet);
@@ -242,6 +290,52 @@ function App() {
     setPot(0);
   };
 
+  // --- MENU RENDER ---
+  if (!difficulty) {
+    return (
+      <div className="poker-table-wrapper">
+         <div className="table">
+            <div className="menu-overlay">
+              <div className="menu-content">
+                <h1 className="menu-title">Poker Pro</h1>
+                <div className="menu-subtitle">SELECT YOUR CHALLENGE</div>
+                
+                <div className="difficulty-container">
+                  {/* EASY CARD */}
+                  <div className="diff-card easy" onClick={() => selectDifficulty('EASY')}>
+                    <div className="diff-icon">🐣</div>
+                    <div className="diff-name" style={{color: '#2ecc71'}}>Rookie</div>
+                    <div className="diff-blind">Blind $10</div>
+                    <div className="diff-desc">Loose player. Calls often. Perfect for beginners.</div>
+                  </div>
+
+                  {/* NORMAL CARD */}
+                  <div className="diff-card normal" onClick={() => selectDifficulty('NORMAL')}>
+                     <div className="diff-icon">😎</div>
+                    <div className="diff-name" style={{color: '#3498db'}}>Pro</div>
+                    <div className="diff-blind">Blind $50</div>
+                    <div className="diff-desc">Standard play. Balanced strategy. Good practice.</div>
+                  </div>
+
+                  {/* HARD CARD */}
+                  <div className="diff-card hard" onClick={() => selectDifficulty('HARD')}>
+                     <div className="diff-icon">🦈</div>
+                    <div className="diff-name" style={{color: '#e74c3c'}}>Shark</div>
+                    <div className="diff-blind">Blind $200</div>
+                    <div className="diff-desc">Aggressive bluffer. High stakes. For experts only.</div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+         </div>
+      </div>
+    );
+  }
+
+  // --- GAME RENDER ---
+  const diffConfig = DIFFICULTY_SETTINGS[difficulty];
+
   return (
     <div className="poker-table-wrapper">
       <div className="table">
@@ -251,9 +345,18 @@ function App() {
         {/* STATS BAR */}
         <div className="game-stats">
           <div className="stat-badge">Streak: {winStreak} 🔥</div>
+          <button style={{
+            padding: '5px 15px', fontSize: '0.8rem', background: '#333', color: '#888',
+            position: 'absolute', top: '-60px', left: '0'
+          }} onClick={exitToMenu}>← MENU</button>
         </div>
 
-        {/* TOP: BOT AREA */}
+        {/* DIFFICULTY BADGE */}
+        <div className="difficulty-badge" style={{background: diffConfig.color, color: 'white'}}>
+          {diffConfig.name} MODE
+        </div>
+
+        {/* BOT AREA */}
         <div className="player-area">
           <div className={`avatar-wrapper bot-avatar ${!isPlayerTurn ? 'active-turn' : ''}`}>
             <div className="avatar">BOT</div>
@@ -266,19 +369,18 @@ function App() {
           </div>
         </div>
 
-        {/* MIDDLE: POT & COMMUNITY */}
+        {/* COMMUNITY */}
         <div className="community-area">
            <div className="pot-display">POT: ${pot}</div>
            <div className="cards-container">
               {communityCards.map((card, i) => (
                  <Card key={i} index={i} card={card} />
               ))}
-              {/* Ghost slots for layout stability */}
               {communityCards.length === 0 && <div style={{width: 50, height: 100}} />}
            </div>
         </div>
 
-        {/* BOTTOM: PLAYER AREA */}
+        {/* PLAYER */}
         <div className="player-area">
           <div className="cards-container">
             {playerHand.map((card, i) => (
@@ -286,7 +388,6 @@ function App() {
             ))}
           </div>
           
-          {/* HAND READER */}
           <div className="hand-reader">
             {stage !== 'start' && handDesc}
           </div>
@@ -301,7 +402,7 @@ function App() {
         <div className="controls-bar">
           {stage === 'start' || stage === 'showdown' ? (
             <button className="btn-main" onClick={dealGame}>
-              {playerChips < BLIND ? "Rebuy ($1000)" : "Deal Hand"}
+              {playerChips < diffConfig.blind ? "Bankrupt" : "Deal Hand"}
             </button>
           ) : (
             isPlayerTurn && (
