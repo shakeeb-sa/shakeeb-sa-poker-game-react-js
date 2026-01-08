@@ -351,13 +351,12 @@ const [raiseAmount, setRaiseAmount] = useState(50); // Default bet
         <ToastContainer />
         {winner === 'Player' && <Confetti width={windowSize.width} height={windowSize.height} recycle={false} />}
         
-        {/* STATS BAR */}
+         {/* STATS BAR */}
         <div className="game-stats">
+          <button className="menu-trigger-btn" onClick={exitToMenu}>
+             ← MENU
+          </button>
           <div className="stat-badge">Streak: {winStreak} 🔥</div>
-          <button style={{
-            padding: '5px 15px', fontSize: '0.8rem', background: '#333', color: '#888',
-            position: 'absolute', top: '-60px', left: '0'
-          }} onClick={exitToMenu}>← MENU</button>
         </div>
 
         {/* DIFFICULTY BADGE */}
