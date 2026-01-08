@@ -21,6 +21,8 @@ const DIFFICULTY_SETTINGS = {
 function App() {
   // --- STATE ---
   const [difficulty, setDifficulty] = useState(null); // 'EASY', 'NORMAL', 'HARD' or null (Menu)
+  // ... other states ...
+const [raiseAmount, setRaiseAmount] = useState(50); // Default bet
   
   const [deck, setDeck] = useState([]);
   const [stage, setStage] = useState('start'); 
@@ -58,6 +60,12 @@ function App() {
   
   useEffect(() => {
     localStorage.setItem('poker_player_chips', playerChips);
+  }, [playerChips]);
+
+    // Ensure slider adjusts if chips change
+  useEffect(() => {
+    if (raiseAmount > playerChips) setRaiseAmount(playerChips);
+    if (raiseAmount < 50 && playerChips >= 50) setRaiseAmount(50);
   }, [playerChips]);
 
   useEffect(() => {
@@ -424,17 +432,35 @@ function App() {
         <div className="controls-bar">
           {stage === 'start' || stage === 'showdown' ? (
             <button className="btn-main" onClick={dealGame}>
-              {playerChips < diffConfig.blind ? "Bankrupt" : "Deal Hand"}
+              {playerChips < (DIFFICULTY_SETTINGS[difficulty]?.blind || 10) ? "Bankrupt" : "Deal Hand"}
             </button>
           ) : (
             isPlayerTurn && (
               <>
+                {/* CHECK / CALL BUTTON */}
                 {currentBet === 0 ? (
                   <button className="btn-check" onClick={handleCheck}>Check</button>
                 ) : (
                   <button className="btn-check" onClick={handleCall}>Call ${currentBet}</button>
                 )}
-                <button className="btn-bet" onClick={() => handleBet(50)}>Bet $50</button>
+
+                {/* SLIDER & BET BUTTON */}
+                <div className="bet-controls">
+                  <div className="bet-value">${raiseAmount}</div>
+                  <input 
+                    type="range" 
+                    min={50} 
+                    max={playerChips} 
+                    step={10} 
+                    value={raiseAmount} 
+                    onChange={(e) => setRaiseAmount(parseInt(e.target.value))}
+                  />
+                </div>
+
+                <button className="btn-bet" onClick={() => handleBet(raiseAmount)}>
+                  {currentBet > 0 ? `Raise $${raiseAmount}` : `Bet $${raiseAmount}`}
+                </button>
+
                 <button className="btn-bet" onClick={() => handleBet(playerChips)}>All In</button>
                 <button className="btn-fold" onClick={handleFold}>Fold</button>
               </>

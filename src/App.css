@@ -402,3 +402,56 @@ button:active { transform: translateY(1px); }
 /* Pot Wrapper */
 .pot-wrapper { display: flex; align-items: center; gap: 15px; background: rgba(0,0,0,0.6); padding: 5px 25px; border-radius: 40px; border: 2px solid var(--gold); }
 .pot-label { color: var(--gold); font-weight: 900; font-size: 1.5rem; }
+
+/* --- BETTING SLIDER (New Feature) --- */
+.bet-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  background: rgba(0,0,0,0.5);
+  padding: 10px 20px;
+  border-radius: 15px;
+  border: 1px solid #444;
+}
+
+.bet-value {
+  color: var(--gold);
+  font-weight: 900;
+  font-size: 1.2rem;
+  text-shadow: 0 2px 5px rgba(0,0,0,0.8);
+}
+
+/* Custom Range Input */
+input[type=range] {
+  -webkit-appearance: none;
+  width: 150px;
+  background: transparent;
+}
+
+input[type=range]:focus { outline: none; }
+
+/* The Track */
+input[type=range]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 8px;
+  cursor: pointer;
+  background: #333;
+  border-radius: 5px;
+  border: 1px solid #555;
+}
+
+/* The Thumb (Handle) */
+input[type=range]::-webkit-slider-thumb {
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  background: var(--gold);
+  cursor: pointer;
+  -webkit-appearance: none;
+  margin-top: -7px; /* Centers thumb */
+  box-shadow: 0 0 10px rgba(241, 196, 15, 0.8);
+}
+
+/* Hover effects */
+input[type=range]:hover::-webkit-slider-thumb { transform: scale(1.2); }
