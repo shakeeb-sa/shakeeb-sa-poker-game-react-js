@@ -306,7 +306,7 @@ const [raiseAmount, setRaiseAmount] = useState(50); // Default bet
          <div className="table">
             <div className="menu-overlay">
               <div className="menu-content">
-                <h1 className="menu-title">Poker Pro</h1>
+                <h1 className="menu-title">Casino Royal</h1>
                 <div className="menu-subtitle">SELECT YOUR CHALLENGE</div>
                 
                 <div className="difficulty-container">
